@@ -25,6 +25,12 @@ export default {
   // Sidebar
   sidebar: {
     chat: 'Chat',
+    dashboard: 'Dashboard',
+    tokenCosts: 'Token Costs',
+    timeline: 'Timeline',
+    projects: 'Projects',
+    patterns: 'Patterns',
+    corrections: 'Corrections',
     jobs: 'Jobs',
     models: 'Models',
     skills: 'Skills',
@@ -35,6 +41,66 @@ export default {
     settings: 'Settings',
     connected: 'Connected',
     disconnected: 'Disconnected',
+  },
+
+  // Dashboard
+  dashboard: {
+    title: 'Dashboard',
+    sessions: 'Sessions',
+    messages: 'Messages',
+    tokens: 'Tokens',
+    toolCalls: 'Tool Calls',
+    modelUsage: 'Model Usage',
+    dailyTrend: 'Daily Trend',
+    topTools: 'Top Tools',
+  },
+
+  // Token Costs
+  tokenCosts: {
+    title: 'Token Costs',
+    today: 'Today',
+    allTime: 'All Time',
+    byModel: 'By Model',
+    cost: 'Cost',
+    pricing: 'Pricing',
+    todayStats: 'Today\'s Stats',
+    allTimeStats: 'All-Time Stats',
+    modelBreakdown: 'Model Breakdown',
+    dailyTrend: 'Daily Trend',
+    pricingReference: 'Pricing Reference',
+    model: 'Model',
+    sessions: 'Sessions',
+    inputTokens: 'Input Tokens',
+    outputTokens: 'Output Tokens',
+    tokens: 'Tokens',
+    date: 'Date',
+    totalSessions: 'Total Sessions',
+    totalTokens: 'Total Tokens',
+    totalCost: 'Total Cost',
+    inputPerM: 'Input ($/M)',
+    outputPerM: 'Output ($/M)',
+    loadFailed: 'Failed to load token costs',
+  },
+
+  // Timeline
+  timeline: {
+    title: 'Timeline',
+    eventTypes: {
+      session: 'Session',
+      memory: 'Memory',
+      skill: 'Skill',
+      milestone: 'Milestone',
+    },
+    milestones: 'Milestones',
+  },
+
+  // Projects
+  projects: {
+    title: 'Projects',
+    gitStatus: 'Git Status',
+    branch: 'Branch',
+    dirty: 'Dirty',
+    active: 'Active',
   },
 
   // Chat
@@ -352,5 +418,34 @@ export default {
     label: 'Language',
     zh: '中文',
     en: 'English',
+  },
+
+  // Patterns
+  patterns: {
+    title: 'Usage Patterns',
+    refresh: 'Refresh',
+    loadFailed: 'Failed to load patterns',
+    hourlyActivity: 'Hourly Activity',
+    similarTasks: 'Similar Tasks',
+    toolSequences: 'Tool Sequences',
+    promptFrequency: 'Common Prompts',
+    sessions: 'sessions',
+  },
+
+  // Corrections
+  corrections: {
+    title: 'Correction History',
+    refresh: 'Refresh',
+    loadFailed: 'Failed to load corrections',
+    totalCorrections: 'Total Corrections',
+    edits: 'Edits',
+    rejects: 'Rejects',
+    last24h: 'Last 24h',
+    history: 'Correction History',
+    noCorrections: 'No corrections recorded',
+    edit: 'Edit',
+    reject: 'Reject',
+    original: 'Original',
+    corrected: 'Corrected',
   },
 }

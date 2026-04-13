@@ -25,6 +25,12 @@ export default {
   // 侧边栏
   sidebar: {
     chat: '对话',
+    dashboard: '仪表板',
+    tokenCosts: 'Token 成本',
+    timeline: '时间线',
+    projects: '项目',
+    patterns: '使用模式',
+    corrections: '纠正记录',
     jobs: '任务',
     models: '模型',
     skills: '技能',
@@ -35,6 +41,66 @@ export default {
     settings: '设置',
     connected: '已连接',
     disconnected: '未连接',
+  },
+
+  // 仪表板
+  dashboard: {
+    title: '仪表板',
+    sessions: '会话数',
+    messages: '消息数',
+    tokens: 'Token 数',
+    toolCalls: '工具调用',
+    modelUsage: '模型使用',
+    dailyTrend: '每日趋势',
+    topTools: '常用工具',
+  },
+
+  // Token 成本
+  tokenCosts: {
+    title: 'Token 成本',
+    today: '今日',
+    allTime: '全部时间',
+    byModel: '按模型',
+    cost: '成本',
+    pricing: '定价',
+    todayStats: '今日统计',
+    allTimeStats: '历史统计',
+    modelBreakdown: '模型明细',
+    dailyTrend: '每日趋势',
+    pricingReference: '定价参考',
+    model: '模型',
+    sessions: '会话数',
+    inputTokens: '输入 Token',
+    outputTokens: '输出 Token',
+    tokens: 'Token 数',
+    date: '日期',
+    totalSessions: '总会话数',
+    totalTokens: '总 Token 数',
+    totalCost: '总成本',
+    inputPerM: '输入 ($/M)',
+    outputPerM: '输出 ($/M)',
+    loadFailed: '加载 Token 成本失败',
+  },
+
+  // 时间线
+  timeline: {
+    title: '时间线',
+    eventTypes: {
+      session: '会话',
+      memory: '记忆',
+      skill: '技能',
+      milestone: '里程碑',
+    },
+    milestones: '里程碑',
+  },
+
+  // 项目
+  projects: {
+    title: '项目',
+    gitStatus: 'Git 状态',
+    branch: '分支',
+    dirty: '有改动',
+    active: '活跃',
   },
 
   // 对话
@@ -352,5 +418,34 @@ export default {
     label: '语言',
     zh: '中文',
     en: 'English',
+  },
+
+  // 使用模式
+  patterns: {
+    title: '使用模式分析',
+    refresh: '刷新',
+    loadFailed: '加载使用模式失败',
+    hourlyActivity: '小时活动分布',
+    similarTasks: '相似任务',
+    toolSequences: '工具序列',
+    promptFrequency: '常用提示词',
+    sessions: '会话',
+  },
+
+  // 纠正记录
+  corrections: {
+    title: '纠正记录',
+    refresh: '刷新',
+    loadFailed: '加载纠正记录失败',
+    totalCorrections: '总纠正数',
+    edits: '编辑',
+    rejects: '拒绝',
+    last24h: '近24小时',
+    history: '纠正历史',
+    noCorrections: '暂无纠正记录',
+    edit: '编辑',
+    reject: '拒绝',
+    original: '原始内容',
+    corrected: '修正内容',
   },
 }

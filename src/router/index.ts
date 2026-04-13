@@ -48,6 +48,31 @@ const router = createRouter({
       name: 'agents',
       component: () => import('@/views/AgentsView.vue'),
     },
+    {
+      path: '/projects',
+      name: 'projects',
+      component: () => import('@/views/ProjectsView.vue'),
+    },
+    {
+      path: '/token-costs',
+      name: 'tokenCosts',
+      component: () => import('@/views/TokenCostsView.vue'),
+    },
+    {
+      path: '/timeline',
+      name: 'timeline',
+      component: () => import('@/views/TimelineView.vue'),
+    },
+    {
+      path: '/patterns',
+      name: 'patterns',
+      component: () => import('@/views/PatternsView.vue'),
+    },
+    {
+      path: '/corrections',
+      name: 'corrections',
+      component: () => import('@/views/CorrectionsView.vue'),
+    },
   ],
 })
 

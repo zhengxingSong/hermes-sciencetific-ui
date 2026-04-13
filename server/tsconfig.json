@@ -10,5 +10,11 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "ts-node": {
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "commonjs"
+    }
+  }
 }
