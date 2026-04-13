@@ -1,7 +1,9 @@
 import Router from '@koa/router'
-import { readdir, readFile, stat, writeFile, mkdir, copyFile } from 'fs/promises'
+import { readdir, readFile, stat, writeFile, mkdir, copyFile, realpath } from 'fs/promises'
 import { join, resolve } from 'path'
 import { homedir } from 'os'
+import { validateFilePath, sanitizeInput, validateModelName, validateProviderKey } from '../utils/validation'
+import { writeSecureFile } from '../utils/file-security'
 
 // --- Auth / Credential Pool ---
 
@@ -211,10 +213,25 @@ fsRoutes.get('/api/skills/:path(.+)', async (ctx) => {
   const filePath = ctx.params.path
   const fullPath = resolve(join(hermesDir, 'skills', filePath))
 
-  // Security: ensure path stays within skills directory
-  if (!fullPath.startsWith(join(hermesDir, 'skills'))) {
-    ctx.status = 403
-    ctx.body = { error: 'Access denied' }
+  const pathValidation = validateFilePath(filePath)
+  if (pathValidation) {
+    ctx.status = 400
+    ctx.body = { error: pathValidation }
+    return
+  }
+
+  try {
+    const resolvedPath = await realpath(fullPath)
+    const skillsDir = await realpath(join(hermesDir, 'skills'))
+
+    if (!resolvedPath.startsWith(skillsDir)) {
+      ctx.status = 403
+      ctx.body = { error: 'Access denied' }
+      return
+    }
+  } catch {
+    ctx.status = 404
+    ctx.body = { error: 'File not found' }
     return
   }
 
@@ -260,7 +277,8 @@ fsRoutes.post('/api/memory', async (ctx) => {
     return
   }
 
-  if (section !== 'memory' && section !== 'user') {
+  const validSections = ['memory', 'user']
+  if (!validSections.includes(section)) {
     ctx.status = 400
     ctx.body = { error: 'Section must be "memory" or "user"' }
     return
@@ -270,11 +288,13 @@ fsRoutes.post('/api/memory', async (ctx) => {
   const filePath = join(hermesDir, 'memories', fileName)
 
   try {
-    await writeFile(filePath, content, 'utf-8')
+    await mkdir(join(hermesDir, 'memories'), { recursive: true })
+    await writeSecureFile(filePath, content)
     ctx.body = { success: true }
   } catch (err: any) {
     ctx.status = 500
-    ctx.body = { error: err.message }
+    ctx.body = { error: 'Failed to write memory file' }
+    console.error('[Memory] Write failed:', err.message)
   }
 })
 
@@ -357,19 +377,17 @@ fsRoutes.get('/api/available-models', async (ctx) => {
     const auth = await loadAuthJson()
     const pool = auth?.credential_pool || {}
 
-    // Read current default model from config.yaml
     const yaml = await safeReadFile(configPath) || ''
     const defaultMatch = yaml.match(/^model:\s*\n\s+default:\s*(.+)/m)
     const currentDefault = defaultMatch?.[1]?.trim() || ''
 
-    // Collect unique endpoints from credential pool
-    const endpoints: Array<{ key: string; label: string; base_url: string; token: string }> = []
+    const endpoints: Array<{ key: string; label: string; base_url: string }> = []
     const seenUrls = new Set<string>()
 
     for (const [providerKey, entries] of Object.entries(pool)) {
       if (!Array.isArray(entries) || entries.length === 0) continue
       const entry = entries.find(e => e.last_status !== 'exhausted') || entries[0]
-      if (!entry?.base_url || !entry?.access_token) continue
+      if (!entry?.base_url) continue
       const baseUrl = entry.base_url.replace(/\/+$/, '')
       if (seenUrls.has(baseUrl)) continue
       seenUrls.add(baseUrl)
@@ -377,43 +395,42 @@ fsRoutes.get('/api/available-models', async (ctx) => {
         key: providerKey,
         label: providerKey.replace(/^custom:/, '') || entry.label || baseUrl,
         base_url: baseUrl,
-        token: entry.access_token,
       })
     }
 
-    // Resolve models: hardcoded catalog first, live probe as fallback
-    const groups: Array<{ provider: string; label: string; base_url: string; models: string[] }> = []
+    const groups: Array<{ provider: string; label: string; base_url?: string; models: string[] }> = []
     const liveEndpoints: typeof endpoints = []
 
     for (const ep of endpoints) {
       const catalogModels = PROVIDER_MODEL_CATALOG[ep.key]
       if (catalogModels && catalogModels.length > 0) {
-        groups.push({ provider: ep.key, label: ep.label, base_url: ep.base_url, models: catalogModels })
+        groups.push({ provider: ep.key, label: ep.label, models: catalogModels })
       } else {
         liveEndpoints.push(ep)
       }
     }
 
-    // Only probe endpoints not in the catalog
     if (liveEndpoints.length > 0) {
+      const authForProbe = await loadAuthJson()
+      const poolForProbe = authForProbe?.credential_pool || {}
+
       const results = await Promise.allSettled(
         liveEndpoints.map(async ep => {
-          const models = await fetchProviderModels(ep.base_url, ep.token)
+          const entry = poolForProbe[ep.key]?.find(e => e.base_url.replace(/\/+$/, '') === ep.base_url)
+          const token = entry?.access_token || ''
+          const models = await fetchProviderModels(ep.base_url, token)
           return { ...ep, models }
         }),
       )
 
       for (const result of results) {
         if (result.status === 'fulfilled' && result.value.models.length > 0) {
-          const { key, label, base_url, models } = result.value
-          groups.push({ provider: key, label, base_url, models })
-        } else if (result.status === 'rejected') {
-          console.error(`[available-models] Failed: ${result.reason?.message || result.reason}`)
+          const { key, label, models } = result.value
+          groups.push({ provider: key, label, models })
         }
       }
     }
 
-    // Fallback: if no providers returned models, fall back to config.yaml parsing
     if (groups.length === 0) {
       const fallback = buildModelGroups(yaml)
       ctx.body = fallback
@@ -423,7 +440,8 @@ fsRoutes.get('/api/available-models', async (ctx) => {
     ctx.body = { default: currentDefault, groups }
   } catch (err: any) {
     ctx.status = 500
-    ctx.body = { error: err.message }
+    ctx.body = { error: 'Failed to fetch available models' }
+    console.error('[AvailableModels] Failed:', err.message)
   }
 })
 
@@ -451,19 +469,32 @@ fsRoutes.put('/api/config/model', async (ctx) => {
     return
   }
 
+  const modelError = validateModelName(defaultModel)
+  if (modelError) {
+    ctx.status = 400
+    ctx.body = { error: modelError }
+    return
+  }
+
+  if (reqProvider) {
+    const providerError = validateProviderKey(reqProvider)
+    if (providerError) {
+      ctx.status = 400
+      ctx.body = { error: providerError }
+      return
+    }
+  }
+
   try {
     await copyFile(configPath, configPath + '.bak')
     let yaml = await safeReadFile(configPath) || ''
 
-    // Rebuild the model: block
     const modelBlockMatch = yaml.match(/^(model:\s*\n(?:  .+\n)*)/m)
     if (modelBlockMatch) {
-      const lines = [`model:`, `  default: ${defaultModel}`]
+      const lines = [`model:`, `  default: ${sanitizeInput(defaultModel, 128)}`]
 
       if (reqProvider) {
-        // Provider from credential pool key (e.g. "zai" or "custom:subrouter.ai")
-        // Hermes resolves base_url/api_key from auth.json automatically
-        lines.push(`  provider: ${reqProvider}`)
+        lines.push(`  provider: ${sanitizeInput(reqProvider, 64)}`)
       }
 
       yaml = yaml.replace(modelBlockMatch[1], lines.join('\n') + '\n')
@@ -473,7 +504,8 @@ fsRoutes.put('/api/config/model', async (ctx) => {
     ctx.body = { success: true }
   } catch (err: any) {
     ctx.status = 500
-    ctx.body = { error: err.message }
+    ctx.body = { error: 'Failed to update model config' }
+    console.error('[ConfigModel] Update failed:', err.message)
   }
 })
 

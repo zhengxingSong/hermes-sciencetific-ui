@@ -153,7 +153,7 @@ onMounted(async () => {
 @use '@/styles/variables' as *;
 
 .logs-view {
-  height: 100vh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
 }

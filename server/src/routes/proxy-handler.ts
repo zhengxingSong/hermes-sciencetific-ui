@@ -1,10 +1,17 @@
 import type { Context } from 'koa'
 import { config } from '../config'
+import { validateProxyPath } from '../utils/validation'
 
 export async function proxy(ctx: Context) {
+  const pathValidation = validateProxyPath(ctx.path)
+  if (pathValidation) {
+    ctx.status = 400
+    ctx.body = { error: pathValidation }
+    return
+  }
+
   const upstream = config.upstream.replace(/\/$/, '')
   const url = `${upstream}${ctx.path}${ctx.search || ''}`
-  console.log(`[PROXY] ${ctx.method} ${ctx.path} -> ${url}`)
 
   // Build headers — forward most, strip browser-specific ones
   const headers: Record<string, string> = {}

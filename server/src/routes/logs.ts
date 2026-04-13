@@ -1,9 +1,9 @@
 import Router from '@koa/router'
 import * as hermesCli from '../services/hermes-cli'
+import { validateLogName } from '../utils/validation'
 
 export const logRoutes = new Router()
 
-// List available log files
 logRoutes.get('/api/logs', async (ctx) => {
   const files = await hermesCli.listLogFiles()
   ctx.body = { files }
@@ -17,9 +17,7 @@ interface LogEntry {
   raw: string
 }
 
-// Parse a single log line into structured entry
 function parseLine(line: string): LogEntry | null {
-  // Match: 2026-04-11 20:16:16,289 INFO aiohttp.access: message
   const match = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})\s+(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+(\S+?):\s(.*)$/)
   if (match) {
     return {
@@ -30,13 +28,19 @@ function parseLine(line: string): LogEntry | null {
       raw: line,
     }
   }
-  // Unparseable line (e.g. traceback continuation)
   return null
 }
 
-// Read log lines (parsed)
 logRoutes.get('/api/logs/:name', async (ctx) => {
   const logName = ctx.params.name
+
+  const validationError = validateLogName(logName)
+  if (validationError) {
+    ctx.status = 400
+    ctx.body = { error: validationError }
+    return
+  }
+
   const lines = ctx.query.lines ? parseInt(ctx.query.lines as string, 10) : 100
   const level = (ctx.query.level as string) || undefined
   const session = (ctx.query.session as string) || undefined
@@ -48,7 +52,6 @@ logRoutes.get('/api/logs/:name', async (ctx) => {
 
     const entries: (LogEntry | null)[] = []
     for (const line of rawLines) {
-      // Skip header lines like "--- ~/.hermes/logs/agent.log (last 100) ---"
       if (line.startsWith('---') || line.trim() === '') continue
       entries.push(parseLine(line))
     }
@@ -56,6 +59,7 @@ logRoutes.get('/api/logs/:name', async (ctx) => {
     ctx.body = { entries }
   } catch (err: any) {
     ctx.status = 500
-    ctx.body = { error: err.message }
+    ctx.body = { error: 'Failed to read logs' }
+    console.error('[Logs] Read failed:', err.message)
   }
 })

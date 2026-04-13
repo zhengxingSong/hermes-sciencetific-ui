@@ -1,4 +1,4 @@
-import { request, getBaseUrlValue } from './client'
+import { request, getBaseUrlValue, getApiKey } from './client'
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
@@ -44,7 +44,12 @@ export function streamRunEvents(
   onError: (err: Error) => void,
 ) {
   const baseUrl = getBaseUrlValue()
-  const url = `${baseUrl}/v1/runs/${runId}/events`
+  const apiKey = getApiKey()
+
+  // EventSource 不支持自定义 headers，使用 api_key query param 传递认证
+  // 后端 auth.ts 已支持 api_key query parameter
+  const authParam = apiKey ? `?api_key=${encodeURIComponent(apiKey)}` : ''
+  const url = `${baseUrl}/v1/runs/${runId}/events${authParam}`
 
   let closed = false
   const source = new EventSource(url)

@@ -1,5 +1,11 @@
 @use 'variables' as *;
 
+// === Google Fonts Import ===
+// Exo: 科学/技术/研究风格标题字体
+// Roboto Mono: 数据精确感，代码和数字展示
+@import url('https://fonts.googleapis.com/css2?family=Exo:wght@300;400;500;600;700&family=Roboto+Mono:wght@300;400;500;700&display=swap');
+
+// === Base Styles ===
 *,
 *::before,
 *::after {
@@ -24,19 +30,31 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-code, pre, .mono {
+// === Typography ===
+// Headings use Exo (科学风格)
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Exo', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+// Code, data, numbers use Roboto Mono
+code, pre, .mono, .data-value, .timestamp, .token-count {
   font-family: $font-code;
 }
 
+// === Links ===
 a {
   color: $accent-primary;
   text-decoration: none;
+  transition: color $transition-fast;
 
   &:hover {
     color: $accent-hover;
   }
 }
 
+// === Scrollbar ===
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -55,6 +73,71 @@ a {
   }
 }
 
+// === Selection ===
 ::selection {
-  background: rgba($accent-primary, 0.3);
+  background: rgba($accent-primary, 0.2);
+  color: $text-primary;
+}
+
+// === Focus States ===
+// 科学家用户重视精确交互
+:focus-visible {
+  outline: 2px solid $accent-primary;
+  outline-offset: 2px;
+}
+
+// === Utility Classes ===
+.text-primary { color: $text-primary; }
+.text-secondary { color: $text-secondary; }
+.text-muted { color: $text-muted; }
+.text-success { color: $success; }
+.text-error { color: $error; }
+.text-warning { color: $warning; }
+
+.bg-primary { background-color: $bg-primary; }
+.bg-secondary { background-color: $bg-secondary; }
+.bg-card { background-color: $bg-card; }
+
+.border { border: 1px solid $border-color; }
+.border-focus { border-color: $accent-primary; }
+
+// === Animation Utilities ===
+// 150-300ms for micro-interactions
+.animate-fast {
+  transition-duration: $transition-fast;
+}
+
+.animate-normal {
+  transition-duration: $transition-normal;
+}
+
+// === Loading Skeleton ===
+// Skeleton screen for loading states
+.skeleton {
+  background: linear-gradient(90deg, $bg-secondary 25%, $bg-primary 50%, $bg-secondary 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// === Data Display ===
+// Tabular numbers for scientific data
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+// === Reduced Motion ===
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

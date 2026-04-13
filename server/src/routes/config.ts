@@ -1,10 +1,11 @@
 import Router from '@koa/router'
 import { readFile, writeFile, copyFile } from 'fs/promises'
-import { chmod } from 'fs/promises'
 import { resolve } from 'path'
 import { homedir } from 'os'
 import YAML from 'js-yaml'
 import { restartGateway } from '../services/hermes-cli'
+import { writeSecureFile, ensureSecurePermissions } from '../utils/file-security'
+import { sanitizeInput } from '../utils/validation'
 
 // Platform sections that require gateway restart after config change
 const PLATFORM_SECTIONS = new Set([
@@ -116,7 +117,6 @@ async function saveEnvValue(key: string, value: string): Promise<void> {
   for (const line of lines) {
     const trimmed = line.trim()
     if (trimmed.startsWith('#')) {
-      // Check if there's a commented-out version of this key
       if (trimmed.startsWith(`# ${key}=`)) {
         if (!remove) {
           result.push(`${key}=${value}`)
@@ -142,11 +142,8 @@ async function saveEnvValue(key: string, value: string): Promise<void> {
     result.push(`${key}=${value}`)
   }
 
-  // Remove trailing empty lines, keep exactly one trailing newline
   let output = result.join('\n').replace(/\n{3,}/g, '\n\n').replace(/\n+$/, '') + '\n'
-  await writeFile(envPath, output, 'utf-8')
-  // Set permissions to 0600 (owner only), matching hermes behavior
-  try { await chmod(envPath, 0o600) } catch { /* ignore */ }
+  await writeSecureFile(envPath, output)
 }
 
 async function readConfig(): Promise<Record<string, any>> {
@@ -214,18 +211,65 @@ configRoutes.put('/api/config', async (ctx) => {
     return
   }
 
+  const safeSection = sanitizeInput(section, 32)
+  const validSections = ['model', 'providers', 'platforms', 'custom_providers', 'memory', 'logging', 'display', 'agent', 'terminal']
+  if (!validSections.includes(safeSection)) {
+    ctx.status = 400
+    ctx.body = { error: 'Invalid section name' }
+    return
+  }
+
   try {
     const config = await readConfig()
-    config[section] = { ...(config[section] || {}), ...values }
+    config[safeSection] = { ...(config[safeSection] || {}), ...values }
     await writeConfig(config)
-    // Restart gateway for platform/channel config changes
-    if (PLATFORM_SECTIONS.has(section)) {
+    if (PLATFORM_SECTIONS.has(safeSection)) {
       await restartGateway()
     }
     ctx.body = { success: true }
   } catch (err: any) {
     ctx.status = 500
-    ctx.body = { error: err.message }
+    ctx.body = { error: 'Failed to update config' }
+    console.error('[Config] Update failed:', err.message)
+  }
+})
+
+// PUT /api/config/personality — update personality setting
+configRoutes.put('/api/config/personality', async (ctx) => {
+  const { personality } = ctx.request.body as { personality: string }
+
+  if (!personality) {
+    ctx.status = 400
+    ctx.body = { error: 'Missing personality' }
+    return
+  }
+
+  const validPersonality = sanitizeInput(personality, 32)
+
+  try {
+    await copyFile(configPath, configPath + '.bak')
+    let yaml = await readFile(configPath, 'utf-8')
+
+    const displayBlockMatch = yaml.match(/^(display:\s*\n(?:  .+\n)*)/m)
+    if (displayBlockMatch) {
+      let displayBlock = displayBlockMatch[1]
+      if (displayBlock.includes('personality:')) {
+        displayBlock = displayBlock.replace(/  personality:\s*\S+/, `  personality: ${validPersonality}`)
+      } else {
+        displayBlock = displayBlock.replace(/^(display:\s*\n)/, `$1  personality: ${validPersonality}\n`)
+      }
+      yaml = yaml.replace(displayBlockMatch[1], displayBlock)
+    } else {
+      const modelBlockEnd = yaml.match(/^(model:\s*\n(?:  .+\n)*)/m)?.[0]?.length || 0
+      yaml = yaml.slice(0, modelBlockEnd) + `\ndisplay:\n  personality: ${validPersonality}\n` + yaml.slice(modelBlockEnd)
+    }
+
+    await writeFile(configPath, yaml, 'utf-8')
+    ctx.body = { success: true }
+  } catch (err: any) {
+    ctx.status = 500
+    ctx.body = { error: 'Failed to update personality' }
+    console.error('[Personality] Update failed:', err.message)
   }
 })
 

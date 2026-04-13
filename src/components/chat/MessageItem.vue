@@ -333,7 +333,7 @@ const formattedToolResult = computed(() => {
   font-size: 11px;
   line-height: 1.5;
   color: $text-secondary;
-  background: $code-bg;
+  background: $bg-code;
   border-radius: $radius-sm;
   padding: 6px 8px;
   margin: 0;

@@ -1,7 +1,6 @@
 import Koa from 'koa'
 import cors from '@koa/cors'
 import bodyParser from '@koa/bodyparser'
-import serve from 'koa-static'
 import send from 'koa-send'
 import { resolve } from 'path'
 import { mkdir } from 'fs/promises'
@@ -14,6 +13,9 @@ import { logRoutes } from './routes/logs'
 import { fsRoutes } from './routes/filesystem'
 import { configRoutes } from './routes/config'
 import { weixinRoutes } from './routes/weixin'
+import { agentRoutes } from './routes/agents'
+import { authMiddleware } from './middleware/auth'
+import { errorHandler } from './middleware/error-handler'
 import * as hermesCli from './services/hermes-cli'
 const { restartGateway } = hermesCli
 
@@ -24,16 +26,21 @@ export async function bootstrap() {
 
   const app = new Koa()
 
+  app.use(errorHandler)
   app.use(cors({ origin: config.corsOrigins }))
   app.use(bodyParser())
 
   app.use(webhookRoutes.routes())
+
+  app.use(authMiddleware)
+
   app.use(logRoutes.routes())
   app.use(uploadRoutes.routes())
   app.use(sessionRoutes.routes())
   app.use(fsRoutes.routes())
   app.use(configRoutes.routes())
   app.use(weixinRoutes.routes())
+  app.use(agentRoutes.routes())
 
   // Health endpoint with version
   app.use(async (ctx, next) => {
@@ -48,11 +55,53 @@ export async function bootstrap() {
 
   app.use(proxyRoutes.routes())
 
-  // SPA fallback
+  // Static files serving with proper MIME types
   const distDir = resolve(__dirname, '..')
-  app.use(serve(distDir))
+  app.use(async (ctx, next) => {
+    // Skip API routes
+    if (ctx.path.startsWith('/api') || ctx.path.startsWith('/v1') || 
+        ctx.path === '/health' || ctx.path === '/upload' || ctx.path === '/webhook') {
+      return await next()
+    }
+    
+    // Try to serve static files with correct MIME types
+    if (/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|map)$/i.test(ctx.path)) {
+      const mimeTypes: Record<string, string> = {
+        '.js': 'application/javascript',
+        '.css': 'text/css',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+        '.ico': 'image/x-icon',
+        '.woff': 'font/woff',
+        '.woff2': 'font/woff2',
+        '.ttf': 'font/ttf',
+        '.eot': 'application/vnd.ms-fontobject',
+        '.json': 'application/json',
+        '.map': 'application/json',
+      }
+      const ext = ctx.path.match(/\.[^.]+$/)?.[0] || ''
+      try {
+        // Set MIME type BEFORE sending file
+        if (mimeTypes[ext]) {
+          ctx.type = mimeTypes[ext]
+        }
+        await send(ctx, ctx.path, { root: distDir })
+        return
+      } catch {
+        // File not found, continue to SPA fallback
+      }
+    }
+    
+    await next()
+  })
+  
+  // SPA fallback for non-asset routes
   app.use(async (ctx) => {
-    if (!ctx.path.startsWith('/api') && !ctx.path.startsWith('/v1') && ctx.path !== '/health' && ctx.path !== '/upload' && ctx.path !== '/webhook') {
+    if (!ctx.path.startsWith('/api') && !ctx.path.startsWith('/v1') && 
+        ctx.path !== '/health' && ctx.path !== '/upload' && ctx.path !== '/webhook') {
       await send(ctx, 'index.html', { root: distDir })
     }
   })

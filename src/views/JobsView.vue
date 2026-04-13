@@ -67,7 +67,7 @@ async function handleSave() {
 @use '@/styles/variables' as *;
 
 .jobs-view {
-  height: 100vh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
 }

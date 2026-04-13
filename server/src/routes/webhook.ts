@@ -1,21 +1,10 @@
 import Router from '@koa/router'
+import { webhookSignatureMiddleware } from '../middleware/webhook-signature'
 import { emitWebhook } from '../services/hermes'
 
 export const webhookRoutes = new Router()
 
-/**
- * POST /webhook — receive callbacks from Hermes Agent
- *
- * Expected body:
- * {
- *   "event": "run.completed" | "job.completed" | ...,
- *   "run_id": "...",
- *   "data": { ... }
- * }
- *
- * TODO: Add signature verification when Hermes supports webhook signing
- */
-webhookRoutes.post('/webhook', async (ctx) => {
+webhookRoutes.post('/webhook', webhookSignatureMiddleware, async (ctx) => {
   const payload = ctx.request.body
 
   if (!payload || !payload.event) {
@@ -24,9 +13,6 @@ webhookRoutes.post('/webhook', async (ctx) => {
     return
   }
 
-  console.log(`[Webhook] Received event: ${payload.event}`)
-
-  // Emit to registered callbacks
   emitWebhook(payload)
 
   ctx.body = { ok: true }

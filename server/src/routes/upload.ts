@@ -1,7 +1,8 @@
 import Router from '@koa/router'
 import { randomBytes } from 'crypto'
-import { mkdir, writeFile } from 'fs/promises'
+import { mkdir, writeFile, chmod } from 'fs/promises'
 import { config } from '../config'
+import { validateUploadFile, sanitizeInput } from '../utils/validation'
 
 export const uploadRoutes = new Router()
 
@@ -22,7 +23,6 @@ uploadRoutes.post('/upload', async (ctx) => {
 
   await mkdir(config.uploadDir, { recursive: true })
 
-  // Read raw body
   const chunks: Buffer[] = []
   for await (const chunk of ctx.req) chunks.push(chunk)
   const body = Buffer.concat(chunks).toString('latin1')
@@ -39,13 +39,41 @@ uploadRoutes.post('/upload', async (ctx) => {
     const filenameMatch = header.match(/filename="([^"]+)"/)
     if (!filenameMatch) continue
 
-    const filename = filenameMatch[1]
-    const ext = filename.includes('.') ? '.' + filename.split('.').pop() : ''
-    const savedName = randomBytes(8).toString('hex') + ext
+    const rawFilename = filenameMatch[1]
+    const safeFilename = sanitizeInput(rawFilename, 64)
+
+    const contentTypeMatch = header.match(/Content-Type:\s*([^\r\n]+)/i)
+    const fileContentType = contentTypeMatch?.[1]?.trim() || 'application/octet-stream'
+
+    const dataSize = Buffer.byteLength(data, 'binary')
+
+    const validationError = validateUploadFile(safeFilename, fileContentType, dataSize)
+    if (validationError) {
+      ctx.status = 400
+      ctx.body = { error: validationError }
+      return
+    }
+
+    const ext = safeFilename.includes('.') ? '.' + safeFilename.split('.').pop()?.toLowerCase() : ''
+    const allowedExtensions = [
+      '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp',
+      '.pdf', '.txt', '.md', '.json', '.yaml', '.yml', '.csv',
+      '.zip', '.tar', '.gz'
+    ]
+
+    if (!ext || !allowedExtensions.includes(ext)) {
+      ctx.status = 400
+      ctx.body = { error: `File extension not allowed: ${ext}` }
+      return
+    }
+
+    const savedName = randomBytes(16).toString('hex') + ext
     const savedPath = `${config.uploadDir}/${savedName}`
 
     await writeFile(savedPath, Buffer.from(data, 'binary'))
-    results.push({ name: filename, path: savedPath })
+    await chmod(savedPath, 0o644)
+
+    results.push({ name: safeFilename, path: savedPath })
   }
 
   ctx.body = { files: results }

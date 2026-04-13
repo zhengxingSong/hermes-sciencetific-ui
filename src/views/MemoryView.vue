@@ -188,7 +188,7 @@ const displayUser = computed(() => (data.value?.user || '').replace(/§/g, '\n\n
 @use '@/styles/variables' as *;
 
 .memory-view {
-  height: 100vh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
 }

@@ -81,7 +81,7 @@ const renderedHtml = computed(() => md.render(props.content))
   }
 
   code:not(.hljs) {
-    background: $code-bg;
+    background: $bg-code;
     padding: 2px 6px;
     border-radius: 4px;
     font-family: $font-code;
@@ -123,7 +123,7 @@ const renderedHtml = computed(() => md.render(props.content))
   margin: 8px 0;
   border-radius: $radius-sm;
   overflow: hidden;
-  background: $code-bg;
+  background: $bg-code;
   border: 1px solid $border-color;
 
   .code-header {

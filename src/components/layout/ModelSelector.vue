@@ -7,19 +7,24 @@ const appStore = useAppStore()
 
 const options = computed(() =>
   appStore.modelGroups.map(g => ({
-    label: g.label,
+    label: `${g.label} (${g.provider})`,
     type: 'group' as const,
     key: g.provider,
     children: g.models.map(m => ({
-      label: m,
+      label: `${m} (${g.provider})`,
       value: m,
+      provider: g.provider,
     })),
   })),
 )
 
-function handleChange(value: string | number | Array<string | number>) {
+function handleChange(value: string | number | Array<string | number>, _option: any) {
   if (typeof value === 'string') {
-    appStore.switchModel(value)
+    // Find the selected option to get provider
+    const selectedOption = options.value
+      .flatMap(g => g.children || [])
+      .find(c => c.value === value)
+    appStore.switchModel(value, selectedOption?.provider)
   }
 }
 </script>

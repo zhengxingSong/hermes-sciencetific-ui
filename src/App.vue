@@ -49,7 +49,8 @@ useKeyboard()
 
 .app-main {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   background-color: $bg-primary;
 }
 </style>

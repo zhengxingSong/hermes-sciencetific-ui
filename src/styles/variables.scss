@@ -1,56 +1,117 @@
-// 黑白水墨 — Pure Ink
-// 纯黑白灰，无彩色
+// Scientific Professional Theme — Deep Navy + Emerald
+// 专业科学配色：深蓝 + 翠绿，适合研究/数据科学家用户
 
-// Backgrounds
-$bg-primary: #fafafa;
-$bg-secondary: #f0f0f0;
-$bg-sidebar: #f5f5f5;
-$bg-card: #ffffff;
-$bg-card-hover: #fafafa;
-$bg-input: #ffffff;
+// === Colors ===
+// Primary: Deep Navy (专业、信任、科技感)
+$primary-50: #E8F0F8;
+$primary-100: #C5D9ED;
+$primary-200: #9FC1E0;
+$primary-300: #78A8D3;
+$primary-400: #5693C9;
+$primary-500: #1E3A5F;   // Main primary
+$primary-600: #17304D;
+$primary-700: #12263B;
+$primary-800: #0D1C2A;
+$primary-900: #081218;
+
+// Accent: Emerald Green (成功、确认、科学感)
+$accent-50: #ECFDF5;
+$accent-100: #D1FAE5;
+$accent-200: #A7F3D0;
+$accent-300: #6EE7B7;
+$accent-400: #34D399;
+$accent-500: #059669;   // Main accent
+$accent-600: #047857;
+$accent-700: #065F46;
+$accent-800: #064E3B;
+$accent-900: #022C22;
+
+// Secondary: Interactive Blue
+$secondary-50: #EFF6FF;
+$secondary-100: #DBEAFE;
+$secondary-200: #BFDBFE;
+$secondary-300: #93C5FD;
+$secondary-400: #60A5FA;
+$secondary-500: #2563EB; // Main secondary
+$secondary-600: #1D4ED8;
+
+// === Light Mode ===
+$bg-primary: #F8FAFC;      // 科学灰白
+$bg-secondary: #F1F5F9;    // 次级背景
+$bg-sidebar: #FFFFFF;      // 侧边栏
+$bg-card: #FFFFFF;         // 卡片
+$bg-card-hover: #F8FAFC;   // 卡片 hover
+$bg-input: #FFFFFF;        // 输入框
+$bg-code: #F1F5F9;         // 代码背景
 
 // Borders
-$border-color: #e0e0e0;
-$border-light: #ebebeb;
+$border-color: #E4E7EB;    // 主边框
+$border-light: #F1F3F5;    // 弱边框
+$border-focus: #1E3A5F;    // focus 边框
 
-// Accent
-$accent-primary: #333333;
-$accent-hover: #1a1a1a;
-$accent-muted: #888888;
+// Accent Colors
+$accent-primary: #1E3A5F;  // 深蓝主色
+$accent-hover: #17304D;    // hover 状态
+$accent-muted: #78A8D3;    // 弱化色
 
 // Text
-$text-primary: #1a1a1a;
-$text-secondary: #666666;
-$text-muted: #999999;
+$text-primary: #0F172A;    // 主文字
+$text-secondary: #475569;  // 次级文字
+$text-muted: #94A3B8;      // 弱化文字
+$text-inverse: #F8FAFC;    // 反色文字（深色背景上）
 
 // Status
-$success: #2e7d32;
-$error: #c62828;
-$warning: #f57f17;
-$info: $accent-primary;
+$success: #059669;         // 成功绿
+$error: #DC2626;           // 错误红
+$warning: #D97706;         // 警告橙
+$info: #2563EB;            // 信息蓝
 
-// Message bubbles
-$msg-user-bg: #e8e8e8;
-$msg-assistant-bg: #f5f5f5;
-$msg-system-border: #bdbdbd;
+// Message bubbles (对话)
+$msg-user-bg: #E8F0F8;     // 用户消息 - 淡蓝
+$msg-assistant-bg: #F1F5F9; // AI 消息 - 灰白
+$msg-system-border: #E4E7EB; // 系统消息边框
 
-// Code
-$code-bg: #f4f4f4;
+// === Dark Mode ===
+$dark-bg-primary: #0F172A;
+$dark-bg-secondary: #1E293B;
+$dark-bg-sidebar: #1E293B;
+$dark-bg-card: #1E293B;
+$dark-bg-card-hover: #334155;
+$dark-bg-input: #1E293B;
+$dark-bg-code: #334155;
 
-// Typography
-$font-ui: 'Inter', system-ui, -apple-system, sans-serif;
-$font-code: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+$dark-border-color: #334155;
+$dark-border-light: #475569;
 
-// Layout
+$dark-text-primary: #E2E8F0;
+$dark-text-secondary: #94A3B8;
+$dark-text-muted: #64748B;
+
+$dark-msg-user-bg: #1E3A5F;
+$dark-msg-assistant-bg: #1E293B;
+
+// === Typography ===
+// 科学/研究风格字体
+$font-ui: 'Exo', 'Inter', system-ui, -apple-system, sans-serif;
+$font-code: 'Roboto Mono', 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+// === Layout ===
 $sidebar-width: 240px;
 $sidebar-collapsed-width: 64px;
 $header-height: 56px;
 
-// Radius
+// === Radius (Flat Design - 略增加) ===
 $radius-sm: 6px;
-$radius-md: 10px;
-$radius-lg: 14px;
+$radius-md: 8px;
+$radius-lg: 12px;
 
-// Transition
+// === Transitions ===
 $transition-fast: 0.15s ease;
-$transition-normal: 0.25s ease;
+$transition-normal: 0.2s ease;
+$transition-slow: 0.3s ease;
+
+// === Shadows (Flat Design - 极少使用) ===
+$shadow-sm: none;
+$shadow-md: none;
+$shadow-lg: none;
+// 如需强调层次，使用 border 代替 shadow

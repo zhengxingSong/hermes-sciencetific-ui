@@ -1,10 +1,11 @@
 import Router from '@koa/router'
 import axios from 'axios'
-import { readFile, writeFile } from 'fs/promises'
-import { chmod } from 'fs/promises'
+import { readFile } from 'fs/promises'
 import { resolve } from 'path'
 import { homedir } from 'os'
 import { restartGateway } from '../services/hermes-cli'
+import { writeSecureFile } from '../utils/file-security'
+import { sanitizeInput } from '../utils/validation'
 
 const envPath = resolve(homedir(), '.hermes/.env')
 const ILINK_BASE = 'https://ilinkai.weixin.qq.com'
@@ -43,27 +44,29 @@ weixinRoutes.get('/api/weixin/qrcode/status', async (ctx) => {
     return
   }
 
+  const safeQrcode = sanitizeInput(qrcode, 64)
+
   try {
     const res = await axios.get(`${ILINK_BASE}/ilink/bot/get_qrcode_status`, {
-      params: { qrcode },
+      params: { qrcode: safeQrcode },
       timeout: 35000,
     })
     const data = res.data
     const status = data?.status || 'wait'
     ctx.body = { status }
 
-    // If confirmed, return credentials so frontend can save them
     if (status === 'confirmed') {
       ctx.body = {
         status: 'confirmed',
-        account_id: data.ilink_bot_id,
-        token: data.bot_token,
-        base_url: data.baseurl,
+        account_id: sanitizeInput(data.ilink_bot_id || '', 64),
+        token: sanitizeInput(data.bot_token || '', 128),
+        base_url: sanitizeInput(data.baseurl || '', 256),
       }
     }
   } catch (err: any) {
     ctx.status = 500
-    ctx.body = { error: err.message || 'Failed to poll QR status' }
+    ctx.body = { error: 'Failed to poll QR status' }
+    console.error('[Weixin] QR status failed:', err.message)
   }
 })
 
@@ -81,6 +84,10 @@ weixinRoutes.post('/api/weixin/save', async (ctx) => {
     return
   }
 
+  const safeAccountId = sanitizeInput(account_id, 64)
+  const safeToken = sanitizeInput(token, 128)
+  const safeBaseUrl = base_url ? sanitizeInput(base_url, 256) : ''
+
   try {
     let raw: string
     try {
@@ -90,10 +97,10 @@ weixinRoutes.post('/api/weixin/save', async (ctx) => {
     }
 
     const entries: Record<string, string> = {
-      WEIXIN_ACCOUNT_ID: account_id,
-      WEIXIN_TOKEN: token,
+      WEIXIN_ACCOUNT_ID: safeAccountId,
+      WEIXIN_TOKEN: safeToken,
     }
-    if (base_url) entries.WEIXIN_BASE_URL = base_url
+    if (safeBaseUrl) entries.WEIXIN_BASE_URL = safeBaseUrl
 
     const lines = raw.split('\n')
     const existingKeys = new Set<string>()
@@ -124,13 +131,13 @@ weixinRoutes.post('/api/weixin/save', async (ctx) => {
     }
 
     let output = result.join('\n').replace(/\n{3,}/g, '\n\n').replace(/\n+$/, '') + '\n'
-    await writeFile(envPath, output, 'utf-8')
-    try { await chmod(envPath, 0o600) } catch { /* ignore */ }
+    await writeSecureFile(envPath, output)
     await restartGateway()
 
     ctx.body = { success: true }
   } catch (err: any) {
     ctx.status = 500
-    ctx.body = { error: err.message }
+    ctx.body = { error: 'Failed to save weixin credentials' }
+    console.error('[Weixin] Save failed:', err.message)
   }
 })
